@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  WHEN ARE YOU FREE  —  Step 1
+  ============================================================
+
+  This whole app is ONE file. That's on purpose.
+
+  It has three sections, in this order:
+
+    1. THE LOOK       (CSS)  - colours, spacing, fonts
+    2. THE STRUCTURE  (HTML) - the boxes on the page
+    3. THE BRAIN      (JS)   - what happens when you click
+
+  READ SECTION 3. That's where the actual app lives.
+  Sections 1 and 2 are just decoration and scaffolding.
+  ============================================================
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When Are You Free</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   1. THE LOOK
+   You can ignore all of this for now. It only controls
+   colours and spacing. Nothing here makes the app *work*.
+   ============================================================ */
+
+:root {
+  --ink: #1F2937;
+  --muted: #6B7280;
+  --page: #F8F9FF;
+  --card: #FFFFFF;
+  --line: #E7EAF2;
+  --primary: #7C5CFF;
+  --primary-dark: #6246EA;
+  --teal: #00C2A8;
+  --busy: #FF6B9D;
+  --busy-tint: #FFF0F6;
+  --radius: 16px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  padding: 32px 20px 64px;
+  background:
+    linear-gradient(
+    180deg,
+    #FDFDFF 0%,
+    #F7F8FF 100%
+    );
+  color: var(--ink);
+  font-family: "DM Sans", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.wrap { max-width: 720px; margin: 0 auto; }
+
+h1 {
+  font-size: 42px;
+  font-weight: 700;
+  margin: 0 0 20px;
+  background:
+    linear-gradient(
+      135deg,
+      var(--primary),
+      var(--teal)
+    );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.04em;
+}
+
+.sub { color: var(--muted); margin: 0 0 20px; }
+
+.card {
+  background: var(--card);
+  border: 1px solid rgba(124, 92, 255, 0.08);
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow:
+    0 8px 30px rgba(124,92,255,0.08);
+}
+
+label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+input[type="text"] {
+  width: 100%;
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--ink);
+  background: #FAFBFF;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  margin-bottom: 16px;
+  transition: all .2s ease;
+}
+
+input[type="text"]:focus {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 4px rgba(124,92,255,.12);
+
+  background: white;
+}
+
+.scroller { overflow-x: auto; padding-bottom: 4px; }
+
+/* The calendar grid: 1 narrow column for the time labels,
+   then 7 equal columns for the days. */
+.grid {
+  display: grid;
+  grid-template-columns: 52px repeat(7, minmax(46px, 1fr));
+  gap: 5px;
+  min-width: 420px;
+}
+
+.day-head {
+  font: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  padding-bottom: 4px;
+  line-height: 1.25;
+}
+.day-head strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.time-label {
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+}
+
+/* Each clickable square in the grid */
+.cell {
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--page);
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  color: transparent;
+  transition: background 0.12s, border-color 0.12s;
+}
+.cell:hover {
+  border-color: var(--primary);
+  box-shadow:
+    0 0 0 3px rgba(124,92,255,.08);
+}
+
+/* .is-busy is added by the JavaScript when you click a square */
+.cell.is-busy {
+  background:
+    linear-gradient(
+      135deg,
+      var(--busy),
+      #FF8E53
+    );
+  color: #5C0F27;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow:
+    0 4px 12px rgba(255,107,157,.3);
+}
+
+.tally {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.tally-num {
+  font-family: "Bricolage Grotesque", sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+.tally-txt { color: var(--muted); font-size: 14px; }
+
+.primary {
+  width: 100%;
+  padding: 16px;
+  color: white;
+  border: none;
+  border-radius: 18px;
+  font: inherit;
+  font-weight: 700;
+  background:
+    linear-gradient(
+      135deg,
+      var(--primary),
+      #9D4EDD
+    );
+  box-shadow:
+    0 10px 25px rgba(124,92,255,.25);
+  transition: all .2s ease;
+  cursor: pointer;
+}
+.primary:hover {
+  transform: translateY(-2px);
+}
+
+.primary:active {
+  transform: translateY(1px);
+}
+
+.weeklabel {
+  font-size: 13px;
+  color: var(--muted);
+  align-self: center;
+  margin: 0 4px;
+}
+
+.weeknav {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.navbtn {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 14px;
+  color: var(--ink);
+  background: var(--page);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.navbtn:hover { border-color: var(--primary); }
+
+/* Keyboard users need to see where they are */
+button:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.note {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--page);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.note:empty { display: none; }
+
+/* ------------------------------------------------------------
+   WIDE screens: two columns.
+   grid-template-areas is a picture of the layout. It lets us
+   put the button in the left column even though it comes AFTER
+   the calendar in the HTML - so phones keep the right order.
+   ------------------------------------------------------------ */
+@media (min-width: 900px) {
+
+  .wrap { max-width: 1040px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    grid-template-areas:
+      "form     calendar"
+      "actions  calendar"
+      ".        calendar";
+    grid-template-rows: auto auto 1fr;
+    gap: 24px;
+    align-items: start;
+    margin-bottom: 0;
+  }
+
+  .card-form { grid-area: form; }
+  .card-cal  { grid-area: calendar; }
+  .actions   { grid-area: actions; }
+
+  .layout > .card { margin-bottom: 0; }
+
+}
+
+/* ------------------------------------------------------------
+   SHORT screens (your laptop is 589px tall).
+   Asks about HEIGHT, not width, because height is the problem.
+   Every number below was worked out from a budget: 271px of
+   overhead + 11 rows x 28px = 579px, in a 589px viewport.
+   Still scrolling a hair? Change the 28px to 26px.
+   ------------------------------------------------------------ */
+@media (min-width: 900px) and (max-height: 950px) {
+
+  body {
+    padding-top: 12px;
+    padding-bottom: 20px;
+  }
+
+  h1 {
+    font-size: 26px;
+    margin: 0 0 8px;
+  }
+
+  .sub { margin-bottom: 12px; }
+
+  .layout { gap: 16px; }
+
+  .layout > .card { padding: 16px; }
+
+  .weeknav { margin-bottom: 10px; }
+
+  .navbtn { padding: 6px 12px; }
+
+  .grid { gap: 3px; }
+
+  .cell {
+    height: 28px;
+    border-radius: 8px;
+  }
+
+  .tally {
+    margin-top: 10px;
+    padding-top: 10px;
+  }
+
+  .tally-num { font-size: 22px; }
+
+  .primary { padding: 12px; }
+
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+
+<body>
+<div class="wrap">
+
+  <!-- ============================================================
+       2. THE STRUCTURE
+       Notice how little there is here. The grid of squares is
+       NOT written out by hand — the JavaScript builds it.
+       ============================================================ -->
+
+  <h1>When are you free?</h1>
+
+  <div class="layout">
+
+    <div class="card card-form">
+      <p class="sub">Mark the times you <em>can't</em> make. Send the rest to your friends.</p>
+
+      <label for="eventName">What's the plan?</label>
+      <input type="text" id="eventName" placeholder="Relaxation">
+
+      <label for="yourName">Your name</label>
+      <input type="text" id="yourName" placeholder="Jolanta">
+
+      <label for="location">Location</label>
+      <input type="text" id="location" placeholder="SPA">
+    </div>
+
+    <div class="card card-cal">
+      <div class="weeknav">
+          <button class="navbtn" id="prevBtn">&larr; Earlier</button>
+          <span class="weeklabel" id="weekLabel"></span>
+          <button class="navbtn" id="nextBtn">Later &rarr;</button>
+        </div>
+      <div class="scroller">
+        <!-- This div starts EMPTY. The JavaScript fills it in. -->
+        <div class="grid" id="grid"></div>
+      </div>
+
+      <div class="tally">
+        <span class="tally-num" id="tallyNum">0</span>
+        <span class="tally-txt">times marked as busy</span>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="primary" id="shareBtn">Create shareable link</button>
+      <div class="note" id="note"></div>
+    </div>
+
+  </div>
+
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ============================================================
+   3. THE BRAIN
+   This is the part worth reading. It is about 130 lines.
+   ============================================================ */
+
+
+/* ---- A. The settings ----------------------------------------
+   The 11 time slots we offer. Want different ones?
+   Change this single line and the whole grid changes.
+   Try it: add "9pm" to the end and reload the page.        */
+
+const TIMES = ["9am", "10am", "11am", "12pm", "1pm", "2pm", "3pm", "4pm", "5pm", "6pm", "7pm"];
+
+const HOW_MANY_DAYS = 7;
+
+
+/* ---- B. The memory ------------------------------------------
+   This is where the app remembers your choices.
+   A "Set" is just a bag of unique labels. Each label looks
+   like:  "2026-08-05|3pm"
+   If that label is in the bag, you're busy then.            */
+
+/* ---- Connecting to the database -----------------------------
+   The URL and key below are public - everyone who loads this
+   page can see them. That is fine and expected. Security comes
+   from the policies in Supabase, not from hiding these.       */
+
+const SUPABASE_URL = "https://ivjsvwepfclkukefwdym.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml2anN2d2VwZmNsa3VrZWZ3ZHltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwMDY3OTMsImV4cCI6MjEwMTU4Mjc5M30.kI6jdQJC2tALDbJWyfLHozgvEGPGEwEjWy3oIDFvMNw";
+
+const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const busySlots = new Set();
+
+let startDate = new Date();     // the first day the grid shows
+
+/* ---- C. Work out the next 7 dates ---------------------------
+   We don't hardcode dates. We ask the computer for today,
+   then count forwards. So this app never goes out of date. */
+
+function getNextDays(howMany) {
+  const days = [];
+  for (let i = 0; i < howMany; i++) {
+    const date = new Date(startDate);
+    date.setDate(date.getDate() + i);   // today + i days
+    days.push(date);
+  }
+  return days;
+}
+
+/* ---- D. Draw the grid ---------------------------------------
+   Two loops, one inside the other:
+   for each time slot -> for each day -> make one square.
+   11 times x 7 days = 77 squares, from ~20 lines of code.  */
+
+const grid = document.getElementById("grid");
+
+function drawGrid() {
+  grid.innerHTML = "";                       // start with a clean slate
+
+const DAYS = getNextDays(HOW_MANY_DAYS);   // recalculated every redraw
+
+document.getElementById("weekLabel").textContent =
+    DAYS[0].toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+
+  document.getElementById("tallyNum").textContent = busySlots.size;
+
+  // Top row: one empty corner, then the seven day headings
+  grid.appendChild(document.createElement("div"));
+
+  DAYS.forEach(function (date) {
+    const head = document.createElement("button");
+    head.className = "day-head";
+    head.type = "button";
+    head.title = "Mark or clear the whole day";
+    head.innerHTML =
+      date.toLocaleDateString("en-GB", { weekday: "short" }) +
+      "<strong>" + date.getDate() + "</strong>";
+
+    head.addEventListener("click", function () {
+      toggleWholeDay(date);
+    });
+
+    grid.appendChild(head);
+  });
+
+  // Then one row per time slot
+  TIMES.forEach(function (time) {
+
+    const label = document.createElement("div");
+    label.className = "time-label";
+    label.textContent = time;
+    grid.appendChild(label);
+
+    DAYS.forEach(function (date) {
+      const slotId = makeSlotId(date, time);
+
+      const cell = document.createElement("button");
+      cell.className = "cell";
+      cell.textContent = "busy";
+      cell.setAttribute("aria-label", date.toDateString() + " at " + time);
+
+      // If this slot is already in our memory bag, colour it in
+      if (busySlots.has(slotId)) {
+        cell.classList.add("is-busy");
+        cell.setAttribute("aria-pressed", "true");
+      } else {
+        cell.setAttribute("aria-pressed", "false");
+      }
+
+      // THE IMPORTANT BIT: what happens on a click
+      cell.addEventListener("click", function () {
+        toggleSlot(slotId);
+      });
+
+      grid.appendChild(cell);
+    });
+  });
+}
+
+
+/* ---- E. Turning a square on and off -------------------------
+   Add to the bag, or take out of the bag. Then redraw.     */
+
+function makeSlotId(date, time) {
+  return date.toISOString().slice(0, 10) + "|" + time;   // "2026-08-05|3pm"
+}
+
+function toggleSlot(slotId) {
+  if (busySlots.has(slotId)) {
+    busySlots.delete(slotId);
+  } else {
+    busySlots.add(slotId);
+  }
+  drawGrid();
+}
+
+
+/* ---- Toggling a whole day -----------------------------------
+   If every slot that day is already busy, clear them all.
+   Otherwise fill them all in. One button, both jobs.          */
+
+function toggleWholeDay(date) {
+  const ids = TIMES.map(function (time) {
+    return makeSlotId(date, time);
+  });
+
+  const allBusy = ids.every(function (id) {
+    return busySlots.has(id);
+  });
+
+  ids.forEach(function (id) {
+    if (allBusy) {
+      busySlots.delete(id);
+    } else {
+      busySlots.add(id);
+    }
+  });
+
+  drawGrid();
+}
+
+
+/* ---- F. Save the event and produce a link -------------------
+   Talks to Supabase. Everything here can fail, so every
+   database call gets its error checked.                       */
+
+document.getElementById("shareBtn").addEventListener("click", async function () {
+
+  const name  = document.getElementById("eventName").value.trim();
+  const place = document.getElementById("location").value.trim();
+  const who   = document.getElementById("yourName").value.trim();
+  const note  = document.getElementById("note");
+
+  if (!name) {
+    note.textContent = "Give the plan a name first.";
+    return;
+  }
+  if (busySlots.size === 0) {
+    note.textContent = "Mark at least one busy time first.";
+    return;
+  }
+
+  note.textContent = "Saving...";
+
+  const btn = document.getElementById("shareBtn");
+  btn.disabled = true;
+
+  // We invent the ID ourselves instead of letting the database do it.
+  // That way we already know the link before we've even saved.
+  const eventId = crypto.randomUUID();
+
+  const { error } = await db.from("events").insert({
+    id:             eventId,
+    name:           name,
+    place:          place || null,
+    organiser_name: who || null,
+    blocked_slots:  Array.from(busySlots)
+  });
+
+  if (error) {
+    note.textContent = "Could not save: " + error.message;
+    console.error(error);
+    return;
+  }
+
+  const link = window.location.origin + window.location.pathname
+             + "?event=" + eventId;
+
+  note.textContent = "Saved. Your link: " + link;
+});
+
+/* ---- G. Moving between weeks -------------------------------- */
+
+function shiftDays(howMany) {
+  startDate.setDate(startDate.getDate() + howMany);
+  drawGrid();
+}
+
+document.getElementById("prevBtn").addEventListener("click", function () {
+  shiftDays(-7);
+});
+
+document.getElementById("nextBtn").addEventListener("click", function () {
+  shiftDays(7);
+});
+
+/* ---- H. Start the app --------------------------------------- */
+
+drawGrid();
+</script>
+</body>
+</html>

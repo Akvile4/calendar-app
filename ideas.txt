@@ -1,0 +1,13 @@
+Ideas
+1. Monthly view 
+2. Able to see previous months as well 
+3. Different people adding their free time slots how to know who is who? 
+4. Tabs with different events and one global calendar (with the confirmn dates), tentative events toggle on/off to see if clashing
+5. 
+6. If the same person wants to change dates how he would do that? (By username, or email?)
+7. If its more than 1 person attending the event, would they see other people availability as well? 
+
+Very Future
+1. Family group calendar - book Zoo together
+2. Multiperson interactive calendar
+3. Animation when events clash
