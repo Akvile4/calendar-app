@@ -262,6 +262,13 @@ input[type="text"]:focus {
 }
 .navbtn:hover { border-color: var(--primary); }
 
+.navbtn:disabled {
+  background: var(--line);
+  color: var(--muted);
+  border-color: var(--line);
+  cursor: not-allowed;
+}
+
 /* Keyboard users need to see where they are */
 button:focus-visible {
   outline: 2px solid var(--primary);
@@ -308,8 +315,8 @@ button:focus-visible {
   .layout > .card { margin-bottom: 0; }
 
   .layout.is-viewing {
-    grid-template-columns: 1fr;
-  }
+  display: block;
+}
 }
 
 /* ------------------------------------------------------------
