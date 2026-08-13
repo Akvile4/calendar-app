@@ -269,6 +269,29 @@ input[type="text"]:focus {
   /* cursor: not-allowed; */
 }
 
+.vote-panel {
+  display: none;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.vote-panel input[type="text"] {
+  margin-bottom: 10px;
+}
+
+.cell.is-picked {
+  background: linear-gradient(135deg, var(--teal), #34D399);
+  color: #04372B;
+  border-color: transparent;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(0,194,168,.3);
+}
+
+.cell:disabled {
+  cursor: not-allowed;
+}
+
 /* Keyboard users need to see where they are */
 button:focus-visible {
   outline: 2px solid var(--primary);
@@ -398,6 +421,12 @@ button:focus-visible {
     </div>
 
     <div class="card card-cal">
+      <div class="vote-panel" id="votePanel">
+        <label for="friendName">Your name</label>
+        <input type="text" id="friendName" placeholder="Your name">
+        <button class="primary" id="submitVoteBtn" type="button">Save my times</button>
+        <div class="note" id="voteNote"></div>
+      </div>
       <div class="weeknav">
           <button class="navbtn" id="prevBtn">&larr; Earlier</button>
           <span class="weeklabel" id="weekLabel"></span>
@@ -459,6 +488,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const busySlots = new Set();
 
 let startDate = new Date();     // the first day the grid shows
+const myPicks = new Set();   // this friend's own "I'm free" times
 const MIN_START_DATE = new Date(startDate);   // never allowed to go earlier than this
 
 /* ---- C. Work out the next 7 dates ---------------------------
@@ -527,12 +557,19 @@ document.getElementById("weekLabel").textContent =
 
       const cell = document.createElement("button");
       cell.className = "cell";
-      cell.textContent = "busy";
+
+      const isBusy   = busySlots.has(slotId);
+      const isPicked = viewingEvent && myPicks.has(slotId);
+
+      cell.textContent = (viewingEvent && !isBusy) ? "free" : "busy";
       cell.setAttribute("aria-label", date.toDateString() + " at " + time);
 
-      // If this slot is already in our memory bag, colour it in
-      if (busySlots.has(slotId)) {
+      if (isBusy) {
         cell.classList.add("is-busy");
+        cell.setAttribute("aria-pressed", "true");
+        if (viewingEvent) cell.disabled = true;   // organiser already said no
+      } else if (isPicked) {
+        cell.classList.add("is-picked");
         cell.setAttribute("aria-pressed", "true");
       } else {
         cell.setAttribute("aria-pressed", "false");
@@ -557,7 +594,17 @@ function makeSlotId(date, time) {
 }
 
 function toggleSlot(slotId) {
-  if (viewingEvent) return;   // just viewing - not editable yet, that's 3d
+  if (viewingEvent) {
+    if (busySlots.has(slotId)) return;   // organiser's time - nothing to toggle
+
+    if (myPicks.has(slotId)) {
+      myPicks.delete(slotId);
+    } else {
+      myPicks.add(slotId);
+    }
+    drawGrid();
+    return;
+  }
 
   if (busySlots.has(slotId)) {
     busySlots.delete(slotId);
@@ -700,9 +747,65 @@ async function loadEventFromLink() {
     (viewingEvent.place ? " at " + viewingEvent.place : "") +
     (viewingEvent.organiser_name ? " - by " + viewingEvent.organiser_name : "");
   document.querySelector(".card-cal").prepend(heading);
+  const votePanel = document.getElementById("votePanel");
+  votePanel.style.display = "block";
 
   drawGrid();
 }
+
+/* ---- J. A friend submits their own times --------------------
+   Same shape as the organiser's save button. The person's own
+   id is invented in the browser, exactly like the event's id -
+   so we never have to ask the database to read anything back. */
+
+document.getElementById("submitVoteBtn").addEventListener("click", async function () {
+  const name = document.getElementById("friendName").value.trim();
+  const note = document.getElementById("voteNote");
+  const btn  = document.getElementById("submitVoteBtn");
+
+  if (!name) {
+    note.textContent = "Enter your name first.";
+    return;
+  }
+  if (myPicks.size === 0) {
+    note.textContent = "Pick at least one time that works for you.";
+    return;
+  }
+
+  note.textContent = "Saving...";
+  btn.disabled = true;
+
+  const personId = crypto.randomUUID();
+
+  const { error: personError } = await db.from("people").insert({
+    id: personId,
+    event_id: viewingEvent.id,
+    name: name
+  });
+
+  if (personError) {
+    note.textContent = "Could not save: " + personError.message;
+    console.error(personError);
+    btn.disabled = false;
+    return;
+  }
+
+  const pickRows = Array.from(myPicks).map(function (slot) {
+    return { person_id: personId, slot: slot };
+  });
+
+  const { error: picksError } = await db.from("picks").insert(pickRows);
+
+  if (picksError) {
+    note.textContent = "Saved your name, but times failed: " + picksError.message;
+    console.error(picksError);
+    btn.disabled = false;
+    return;
+  }
+
+  note.textContent = "Thanks! Your times are saved.";
+  btn.disabled = false;
+});
 
 loadEventFromLink();
 </script>
