@@ -93,6 +93,10 @@ h1 {
     0 8px 30px rgba(124,92,255,0.08);
 }
 
+.card-cal .sub {
+  margin-bottom: 16px;
+}
+
 label {
   display: block;
   font-size: 13px;
@@ -373,7 +377,7 @@ button:focus-visible {
     <div class="card card-form">
       <p class="sub">Mark the times you <em>can't</em> make. Send the rest to your friends.</p>
 
-      <label for="eventName">What's the plan amigo?</label>
+      <label for="eventName">What's the plan?</label>
       <input type="text" id="eventName" placeholder="Relaxation">
 
       <label for="yourName">Your name</label>
@@ -477,6 +481,10 @@ document.getElementById("weekLabel").textContent =
 
   document.getElementById("tallyNum").textContent = busySlots.size;
 
+  if (viewingEvent) {
+    document.querySelector(".weeknav").style.display = "none";
+  }
+
   // Top row: one empty corner, then the seven day headings
   grid.appendChild(document.createElement("div"));
 
@@ -539,6 +547,8 @@ function makeSlotId(date, time) {
 }
 
 function toggleSlot(slotId) {
+  if (viewingEvent) return;   // just viewing - not editable yet, that's 3d
+
   if (busySlots.has(slotId)) {
     busySlots.delete(slotId);
   } else {
@@ -553,6 +563,7 @@ function toggleSlot(slotId) {
    Otherwise fill them all in. One button, both jobs.          */
 
 function toggleWholeDay(date) {
+  if (viewingEvent) return;
   const ids = TIMES.map(function (time) {
     return makeSlotId(date, time);
   });
@@ -639,7 +650,50 @@ document.getElementById("nextBtn").addEventListener("click", function () {
 
 /* ---- H. Start the app --------------------------------------- */
 
-drawGrid();
+/* ---- I. If the URL has ?event=..., load it instead ----------
+   A link like yours.html?event=abc123 means: don't show the
+   create form - fetch that one event and display it.        */
+
+let viewingEvent = null;   // null = create mode. Set once we load one.
+
+async function loadEventFromLink() {
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get("event");
+
+  if (!eventId) {
+    drawGrid();          // no link - normal create mode
+    return;
+  }
+
+  const { data, error } = await db.rpc("get_event", { lookup_id: eventId });
+
+  if (error || !data || data.length === 0) {
+    document.querySelector(".wrap").innerHTML =
+      "<p>This event link doesn't look right. Check it was copied in full.</p>";
+    return;
+  }
+
+  viewingEvent = data[0];
+  busySlots.clear();
+  viewingEvent.blocked_slots.forEach(function (slot) {
+    busySlots.add(slot);
+  });
+
+  document.querySelector(".card-form").style.display = "none";
+  document.querySelector(".actions").style.display = "none";
+
+  const heading = document.createElement("p");
+  heading.className = "sub";
+  heading.innerHTML =
+    "Viewing <strong>" + viewingEvent.name + "</strong>" +
+    (viewingEvent.place ? " at " + viewingEvent.place : "") +
+    (viewingEvent.organiser_name ? " - by " + viewingEvent.organiser_name : "");
+  document.querySelector(".card-cal").prepend(heading);
+
+  drawGrid();
+}
+
+loadEventFromLink();
 </script>
 </body>
 </html>
