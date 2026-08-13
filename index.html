@@ -307,6 +307,9 @@ button:focus-visible {
 
   .layout > .card { margin-bottom: 0; }
 
+  .layout.is-viewing {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ------------------------------------------------------------
@@ -449,6 +452,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const busySlots = new Set();
 
 let startDate = new Date();     // the first day the grid shows
+const MIN_START_DATE = new Date(startDate);   // never allowed to go earlier than this
 
 /* ---- C. Work out the next 7 dates ---------------------------
    We don't hardcode dates. We ask the computer for today,
@@ -481,9 +485,8 @@ document.getElementById("weekLabel").textContent =
 
   document.getElementById("tallyNum").textContent = busySlots.size;
 
-  if (viewingEvent) {
-    document.querySelector(".weeknav").style.display = "none";
-  }
+  document.getElementById("prevBtn").disabled =
+    startDate.getTime() <= MIN_START_DATE.getTime();
 
   // Top row: one empty corner, then the seven day headings
   grid.appendChild(document.createElement("div"));
@@ -680,6 +683,7 @@ async function loadEventFromLink() {
   });
 
   document.querySelector(".card-form").style.display = "none";
+  document.querySelector(".layout").classList.add("is-viewing");
   document.querySelector(".actions").style.display = "none";
 
   const heading = document.createElement("p");
