@@ -620,7 +620,31 @@ function toggleSlot(slotId) {
    Otherwise fill them all in. One button, both jobs.          */
 
 function toggleWholeDay(date) {
-  if (viewingEvent) return;
+  if (viewingEvent) {
+    const pickableIds = TIMES.map(function (time) {
+      return makeSlotId(date, time);
+    }).filter(function (id) {
+      return !busySlots.has(id);   // can't pick a time the organiser blocked
+    });
+
+    if (pickableIds.length === 0) return;   // whole day is blocked - nothing to pick
+
+    const allPicked = pickableIds.every(function (id) {
+      return myPicks.has(id);
+    });
+
+    pickableIds.forEach(function (id) {
+      if (allPicked) {
+        myPicks.delete(id);
+      } else {
+        myPicks.add(id);
+      }
+    });
+
+    drawGrid();
+    return;
+  }
+
   const ids = TIMES.map(function (time) {
     return makeSlotId(date, time);
   });
