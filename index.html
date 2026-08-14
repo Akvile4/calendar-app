@@ -414,7 +414,7 @@ button:focus-visible {
       <input type="text" id="eventName" placeholder="Relaxation">
 
       <label for="yourName">Your name</label>
-      <input type="text" id="yourName" placeholder="Jolanta">
+      <input type="text" id="yourName" placeholder="Akvile">
 
       <label for="location">Location</label>
       <input type="text" id="location" placeholder="SPA">
@@ -781,6 +781,27 @@ async function loadEventFromLink() {
    Same shape as the organiser's save button. The person's own
    id is invented in the browser, exactly like the event's id -
    so we never have to ask the database to read anything back. */
+
+document.getElementById("friendName").addEventListener("blur", async function () {
+  const name = this.value.trim();
+  if (!name || !viewingEvent) return;
+
+  const { data, error } = await db.rpc("get_my_picks", {
+    lookup_event_id: viewingEvent.id,
+    person_name: name
+  });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  myPicks.clear();
+  (data || []).forEach(function (slot) {
+    myPicks.add(slot);
+  });
+  drawGrid();
+});
 
 document.getElementById("submitVoteBtn").addEventListener("click", async function () {
   const name = document.getElementById("friendName").value.trim();
