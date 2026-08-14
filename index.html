@@ -799,30 +799,15 @@ document.getElementById("submitVoteBtn").addEventListener("click", async functio
   note.textContent = "Saving...";
   btn.disabled = true;
 
-  const personId = crypto.randomUUID();
-
-  const { error: personError } = await db.from("people").insert({
-    id: personId,
-    event_id: viewingEvent.id,
-    name: name
+  const { error } = await db.rpc("submit_picks", {
+    lookup_event_id: viewingEvent.id,
+    person_name: name,
+    slots: Array.from(myPicks)
   });
 
-  if (personError) {
-    note.textContent = "Could not save: " + personError.message;
-    console.error(personError);
-    btn.disabled = false;
-    return;
-  }
-
-  const pickRows = Array.from(myPicks).map(function (slot) {
-    return { person_id: personId, slot: slot };
-  });
-
-  const { error: picksError } = await db.from("picks").insert(pickRows);
-
-  if (picksError) {
-    note.textContent = "Saved your name, but times failed: " + picksError.message;
-    console.error(picksError);
+  if (error) {
+    note.textContent = "Could not save: " + error.message;
+    console.error(error);
     btn.disabled = false;
     return;
   }
