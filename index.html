@@ -336,10 +336,6 @@ button:focus-visible {
   .actions   { grid-area: actions; }
 
   .layout > .card { margin-bottom: 0; }
-
-  .layout.is-viewing {
-  display: block;
-}
 }
 
 /* ------------------------------------------------------------
@@ -408,25 +404,28 @@ button:focus-visible {
   <div class="layout">
 
     <div class="card card-form">
-      <p class="sub">Mark the times you <em>can't</em> make. Send the rest to your friends.</p>
+      <div id="organiserFields">
+        <p class="sub">Mark the times you <em>can't</em> make. Send the rest to your friends.</p>
 
-      <label for="eventName">What's the plan?</label>
-      <input type="text" id="eventName" placeholder="Relaxation">
+        <label for="eventName">What's the plan?</label>
+        <input type="text" id="eventName" placeholder="Relaxation">
 
-      <label for="yourName">Your name</label>
-      <input type="text" id="yourName" placeholder="Akvile">
+        <label for="yourName">Your name</label>
+        <input type="text" id="yourName" placeholder="Akvile">
 
-      <label for="location">Location</label>
-      <input type="text" id="location" placeholder="SPA">
+        <label for="location">Location</label>
+        <input type="text" id="location" placeholder="SPA">
+      </div>
+
+      <div id="viewerFields" style="display:none;">
+        <p class="sub" id="viewingHeading"></p>
+
+        <label for="friendName">Your name</label>
+        <input type="text" id="friendName" placeholder="Your name">
+      </div>
     </div>
 
     <div class="card card-cal">
-      <div class="vote-panel" id="votePanel">
-        <label for="friendName">Your name</label>
-        <input type="text" id="friendName" placeholder="Your name">
-        <button class="primary" id="submitVoteBtn" type="button">Save my times</button>
-        <div class="note" id="voteNote"></div>
-      </div>
       <div class="weeknav">
           <button class="navbtn" id="prevBtn">&larr; Earlier</button>
           <span class="weeklabel" id="weekLabel"></span>
@@ -445,6 +444,7 @@ button:focus-visible {
 
     <div class="actions">
       <button class="primary" id="shareBtn">Create shareable link</button>
+      <button class="primary" id="submitVoteBtn" type="button" style="display:none;">Save my times</button>
       <div class="note" id="note"></div>
     </div>
 
@@ -760,19 +760,16 @@ async function loadEventFromLink() {
     busySlots.add(slot);
   });
 
-  document.querySelector(".card-form").style.display = "none";
-  document.querySelector(".layout").classList.add("is-viewing");
-  document.querySelector(".actions").style.display = "none";
+  document.getElementById("organiserFields").style.display = "none";
+  document.getElementById("viewerFields").style.display = "block";
 
-  const heading = document.createElement("p");
-  heading.className = "sub";
-  heading.innerHTML =
+  document.getElementById("viewingHeading").innerHTML =
     "Viewing <strong>" + viewingEvent.name + "</strong>" +
     (viewingEvent.place ? " at " + viewingEvent.place : "") +
     (viewingEvent.organiser_name ? " - by " + viewingEvent.organiser_name : "");
-  document.querySelector(".card-cal").prepend(heading);
-  const votePanel = document.getElementById("votePanel");
-  votePanel.style.display = "block";
+
+  document.getElementById("shareBtn").style.display = "none";
+  document.getElementById("submitVoteBtn").style.display = "block";
 
   drawGrid();
 }
@@ -805,7 +802,7 @@ document.getElementById("friendName").addEventListener("blur", async function ()
 
 document.getElementById("submitVoteBtn").addEventListener("click", async function () {
   const name = document.getElementById("friendName").value.trim();
-  const note = document.getElementById("voteNote");
+  const note = document.getElementById("note");
   const btn  = document.getElementById("submitVoteBtn");
 
   if (!name) {
